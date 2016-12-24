@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"os/exec"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -25,14 +26,23 @@ func checkError(msg string, err error) {
 }
 
 func main() {
-	whoami := "faraz" // user.Current doesn't work when cross-compiling macOS -> Linux
+	whoamiFlag := flag.String("whoami", "faraz", "Current Username") // user.Current doesn't work when cross-compiling macOS -> Linux
 	userFlag := flag.String("user", "", "Username")
 	keyFlag := flag.String("key", "", "Public Key")
+	tldFlag := flag.String("tld", "ml", "TLD (ml/cf)")
 
 	flag.Parse()
 
+	whoami := *whoamiFlag
 	user := *userFlag
 	key := *keyFlag
+	tld := *tldFlag
+
+	// Validate user & key flags
+	if (len(user) < 2 || len(key) < 10) {
+		fmt.Println("Please pass in all required arguments")
+		return
+	}
 
 	ip := getIP()
 	port := getFreePort()
@@ -43,8 +53,6 @@ func main() {
 	// Check if user exists
 	if strings.Contains(user, "root") || strings.Contains(string(users), user) {
 		fmt.Println("User already exists")
-		fmt.Println("Flag passed: " + user)
-		fmt.Println(string(users))
 		return
 	}
 
@@ -59,7 +67,6 @@ func main() {
 	fmt.Println("Created .ssh skeleton")
 
 	// Add SSH key & prevent user from running other commands
-	// Fix " right before key
 	reversecommand := `ssh ` + user + `@` + ip + ` -N -R ` + port + `:localhost:` + port
 	command := `cd /home/` + user + `/.ssh/` + ` && sudo echo "command=\"SHELL=/bin/false && printf 'You cannot login. To tunnel, use the following:\n` + reversecommand + `\n'\",no-agent-forwarding,no-X11-forwarding,permitopen=\"localhost:` + port + `\" ` + key + `" > ` + `authorized_keys && sudo chown ` + user + ":" + user + ` authorized_keys`
 
@@ -67,8 +74,17 @@ func main() {
 	checkError("Error restricting .ssh to tunnel only", err)
 	fmt.Printf("Restricted %s tunneling ability for port %s only\n", user, port)
 
-	tld = "ml"                            // ml or cf
-	subdomain := user + ".shownow." + tld // TODO NGINX config
+	subdomain := user + ".shownow." + tld
+
+	nginxConfig, err := os.Create("/etc/nginx/sites-enabled/"+user+".conf")
+	checkError("Error creating NGINX configuration", err)
+	nginxConfig.WriteString("server { listen 80; server_name "+user+".shownow.ml www."+user+".shownow.ml; location / { proxy_pass http://localhost:"+port+"; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; proxy_set_header X-Forwarded-Proto $scheme; } }")
+	nginxConfig.Sync()
+
+	err = exec.Command("/bin/sh", "-c", "sudo systemctl reload nginx").Start()
+	checkError("Error restarting NGINX", err)
+
+	// TODO CloudFlare through API (instead of wildcard) for HTTPS
 	fmt.Printf("alias shownow=%s && open %s\n", reversecommand, subdomain)
 }
 
