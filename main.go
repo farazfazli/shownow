@@ -85,7 +85,7 @@ func main() {
 	checkError("Error restarting NGINX", err)
 
 	// TODO CloudFlare through API (instead of wildcard) for HTTPS
-	fmt.Printf("alias shownow=%s && open %s\n", reversecommand, subdomain)
+	fmt.Printf(`alias "shownow=%s && open %s\n"`, reversecommand, subdomain)
 }
 
 func getIP() string {
