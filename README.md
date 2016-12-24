@@ -3,4 +3,4 @@ Create restricted reverse SSH tunnel users easily &amp; securely. Automatically 
 
 Put your latest project onto the internet in seconds.
 
-For a free account at shownow.ml send an email to me at [farazfazli@gmail.com](mailto:farazfazli@gmail.com)
+For a free reverse SSH account and subdomain at shownow.ml or shownow.cf send an email to me at [farazfazli@gmail.com](mailto:farazfazli@gmail.com).
