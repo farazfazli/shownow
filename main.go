@@ -13,10 +13,6 @@ import (
 	"strings"
 )
 
-/*
-	USAGE: sudo ./shownow -user=testuser -key="ssh public key here"
-*/
-
 // If an error exists, print message and panic
 func checkError(msg string, err error) {
 	if err != nil {
@@ -30,6 +26,7 @@ func main() {
 	userFlag := flag.String("user", "", "Username")
 	keyFlag := flag.String("key", "", "Public Key")
 	tldFlag := flag.String("tld", "ml", "TLD (ml/cf)")
+	tunnelOfflineMessageFlag := flag.String("tunneloffline", "Tunnel offline", "Tunnel offline message to show on a 502 error.")
 
 	flag.Parse()
 
@@ -37,6 +34,7 @@ func main() {
 	user := *userFlag
 	key := *keyFlag
 	tld := *tldFlag
+	tunnelOfflineMessage := *tunnelOfflineMessageFlag
 
 	// Validate user & key flags
 	if (len(user) < 2 || len(key) < 10) {
@@ -78,7 +76,7 @@ func main() {
 
 	nginxConfig, err := os.Create("/etc/nginx/sites-enabled/"+user+".conf")
 	checkError("Error creating NGINX configuration", err)
-	nginxConfig.WriteString("server { listen 80; server_name "+user+".shownow.ml www."+user+".shownow.ml; location / { proxy_pass http://localhost:"+port+"; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; proxy_set_header X-Forwarded-Proto $scheme; } }")
+	nginxConfig.WriteString("server { listen 80; server_name "+user+".shownow.ml www."+user+".shownow.ml; location / { proxy_pass http://localhost:"+port+"; proxy_set_header Host $host; proxy_set_header X-Real-IP $remote_addr; proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; proxy_set_header X-Forwarded-Proto $scheme; } error_page 502 /502.html; location = /502.html { return 502 '"+tunnelOfflineMessage+"'; add_header Content-Type text/plain; } }")
 	nginxConfig.Sync()
 
 	err = exec.Command("/bin/sh", "-c", "sudo systemctl reload nginx").Start()
@@ -88,6 +86,7 @@ func main() {
 	fmt.Printf("alias shownow=\"%s && open %s\"\n", reversecommand, subdomain)
 }
 
+// https://api.ipify.org - better than myexternalip
 func getIP() string {
 	resp, err := http.Get("https://api.ipify.org")
 	checkError("Error getting IP", err)
@@ -97,7 +96,6 @@ func getIP() string {
 }
 
 // https://github.com/phayes/freeport/blob/master/freeport.go
-// https://api.ipify.org - better than myexternalip
 func getFreePort() string {
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	checkError("resolve", err)
