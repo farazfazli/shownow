@@ -26,7 +26,7 @@ func main() {
 	sh := "/bin/sh"
 	// Comamnd flag
 	c := "-c"
-	
+
 	whoamiFlag := flag.String("whoami", "faraz", "Current Username") // user.Current doesn't work when cross-compiling macOS -> Linux
 	userFlag := flag.String("user", "", "Username")
 	keyFlag := flag.String("key", "", "Public Key")
@@ -50,7 +50,7 @@ func main() {
 	ip := getIP()
 	port := getFreePort()
 
-	users, err := exec.Command("users").Output()
+	users, err := exec.Command("sudo cut -d: -f1 /etc/passwd").Output()
 	checkError("Error getting users", err)
 
 	// Check if user exists
