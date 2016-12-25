@@ -50,7 +50,7 @@ func main() {
 	ip := getIP()
 	port := getFreePort()
 
-	users, err := exec.Command("sudo cut -d: -f1 /etc/passwd").Output()
+	users, err := exec.Command(sh, c, "sudo cat /etc/passwd").Output()
 	checkError("Error getting users", err)
 
 	// Check if user exists
