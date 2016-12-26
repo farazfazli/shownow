@@ -66,8 +66,8 @@ func main() {
 	fmt.Printf("Added user: %s\n", user)
 
 	// Modify .ssh externally
-	modsshcmd := fmt.Sprintf(`cd /home/%s && sudo mkdir .ssh && sudo chown -R %s:%s .ssh && cd .ssh && touch authorized_keys && sudo chown %s:%s authorized_keys`, user, user, user, whoami, whoami)
-	_, err = exec.Command(modsshcmd).Output()
+	modsshcmd := fmt.Sprintf(`cd /home/%s && mkdir .ssh && sudo chown -R %s:%s .ssh && cd .ssh && touch authorized_keys && sudo chown %s:%s authorized_keys`, user, user, user, whoami, whoami)
+	_, err = exec.Command(sh, c, modsshcmd).Output()
 	checkError("Error modifying .ssh", err)
 	fmt.Println("Created .ssh skeleton")
 
