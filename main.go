@@ -58,10 +58,26 @@ func main() {
 	// Combine all together to check for collisions
 	users := string(listedUsers) + string(homeDirs) + string(nginxConfigs)
 
-	// Check if user exists
-	if strings.Contains(user, "root") || strings.Contains(string(users), user) {
-		fmt.Printf("%s already exists\n", user)
+	if strings.Contains(user, "root") {
+		fmt.Println("Can't continue")
 		return
+	}
+
+	// Check if user exists
+	if strings.Contains(string(users), user) {
+		
+		findCloseMatchCommand := fmt.Sprintf("sudo ls /etc/nginx/sites-enabled/*.conf | xargs -n 1 basename | cut -f 1 -d '.' | grep %s", user)
+		closeMatch, err := exec.Command(sh, c, findCloseMatchCommand).Output()
+		checkError("Error getting close matches with existing users", err)
+		
+		// Border
+		fmt.Println("--------------------------------------------")
+		fmt.Printf("You chose: %s, I found:\n %s\n Continue? (y/N): ", user, string(closeMatch))
+		var input string
+		fmt.Scanln(&input)
+		if input != "y" {
+			return
+		}
 	}
 
 	// Starting border
